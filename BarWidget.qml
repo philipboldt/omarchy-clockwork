@@ -241,9 +241,8 @@ BarWidget {
         textFormat: Text.PlainText
         color: root.alarmRinging
           ? root.alarmCueColor
-          : root.pomodoroSessionVisible
-          ? root.pomodoroPhaseColor
-          : button.active ? button.activeColor : button.foreground
+          : !button.active ? button.foreground
+          : root.pomodoroSessionVisible ? root.pomodoroPhaseColor : button.activeColor
         font.family: button.fontFamily
         font.pixelSize: Style.bar.iconFont
         renderType: Text.NativeRendering
@@ -257,9 +256,8 @@ BarWidget {
         text: root.pomodoroBreak ? "󰅶" : "󰂚"
         color: root.alarmRinging
           ? root.alarmCueColor
-          : root.pomodoroSessionVisible
-          ? root.pomodoroPhaseColor
-          : button.active ? button.activeColor : button.foreground
+          : !button.active ? button.foreground
+          : root.pomodoroSessionVisible ? root.pomodoroPhaseColor : button.activeColor
         fontFamily: button.fontFamily
         fontSize: Style.bar.iconFont
         anchors.verticalCenter: parent.verticalCenter
