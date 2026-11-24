@@ -14,6 +14,14 @@ A compact Omarchy Quattro bar widget with five modes:
   long break after the final focus cycle. The bar switches to a green coffee
   indicator during breaks, and the panel tracks completed focus sessions.
 
+## Changes in this fork
+
+[philipboldt/omarchy-clockwork](https://github.com/philipboldt/omarchy-clockwork) is based on [pjgeutjens/omarchy-clockwork](https://github.com/pjgeutjens/omarchy-clockwork) and keeps the plugin ID `io.github.pjgeutjens.clockwork`.
+
+- The countdown uses the battery percentage's font size.
+- A bell sits to the right of the countdown and uses the same icon size as the battery. The coffee icon still marks Pomodoro breaks.
+- The active Pomodoro shows its timer and icon without a background. A ringing alarm pulses a rectangular highlight.
+
 ## What's new in 0.7.2
 
 - Closing the panel keeps a running countdown going.
@@ -43,7 +51,7 @@ background in the bar so the state remains visible even after its sound stops.
 ## Install
 
 ```sh
-omarchy plugin add https://github.com/pjgeutjens/omarchy-clockwork.git --enable
+omarchy plugin add https://github.com/philipboldt/omarchy-clockwork.git --enable
 ```
 
 Update an installed copy with:

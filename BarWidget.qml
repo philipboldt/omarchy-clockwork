@@ -218,7 +218,7 @@ BarWidget {
     Rectangle {
       anchors.fill: parent
       anchors.margins: Style.space(2)
-      radius: height / 2
+      radius: 0
       visible: root.alarmRinging
       color: root.alarmCueColor
 
@@ -230,36 +230,10 @@ BarWidget {
       }
     }
 
-    Rectangle {
-      anchors.fill: parent
-      anchors.margins: Style.space(2)
-      radius: height / 2
-      visible: root.pomodoroSessionVisible
-      color: Qt.rgba(
-        root.pomodoroPhaseColor.r,
-        root.pomodoroPhaseColor.g,
-        root.pomodoroPhaseColor.b,
-        TimerCore.TimerState.running ? 0.18 : 0.10
-      )
-    }
-
     Row {
       id: timerRow
       anchors.centerIn: parent
       spacing: Style.space(5)
-
-      Text {
-        text: root.pomodoroBreak ? "󰅶" : "◷"
-        color: root.alarmRinging
-          ? root.alarmCueColor
-          : root.pomodoroSessionVisible
-          ? root.pomodoroPhaseColor
-          : button.active ? button.activeColor : button.foreground
-        font.family: button.fontFamily
-        font.pixelSize: Math.round(Style.font.iconLarge * 1.15)
-        renderType: Text.NativeRendering
-        anchors.verticalCenter: parent.verticalCenter
-      }
 
       Text {
         visible: !root.vertical && TimerCore.TimerState.barTimeText !== ""
@@ -271,8 +245,23 @@ BarWidget {
           ? root.pomodoroPhaseColor
           : button.active ? button.activeColor : button.foreground
         font.family: button.fontFamily
-        font.pixelSize: button.fontSize
+        font.pixelSize: Style.bar.iconFont
         renderType: Text.NativeRendering
+        anchors.verticalCenter: parent.verticalCenter
+      }
+
+      OpticalGlyph {
+        width: Style.bar.iconSize
+        height: Style.bar.iconSize
+        paintedSize: Style.bar.iconSize
+        text: root.pomodoroBreak ? "󰅶" : "󰂚"
+        color: root.alarmRinging
+          ? root.alarmCueColor
+          : root.pomodoroSessionVisible
+          ? root.pomodoroPhaseColor
+          : button.active ? button.activeColor : button.foreground
+        fontFamily: button.fontFamily
+        fontSize: Style.bar.iconFont
         anchors.verticalCenter: parent.verticalCenter
       }
     }
