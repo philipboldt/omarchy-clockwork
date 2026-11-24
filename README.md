@@ -1,8 +1,8 @@
-# Clockwork for Omarchy
+# Clockwork Alarm Clock for Omarchy
 
 ![Clockwork interval timer preview](preview.png)
 
-A compact Omarchy Quattro bar widget with five modes:
+Clockwork is an alarm clock for the Omarchy Quattro bar. Set a one-shot alarm for the next occurrence of a time you choose. The widget also includes four timer modes.
 
 - Stopwatch: a regular count-up timer.
 - Countdown: minutes and seconds, with an optional full-screen break view and
