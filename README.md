@@ -191,6 +191,7 @@ omarchy plugin remove io.github.pjgeutjens.clockwork
 
 ## Runtime notes
 
-This plugin runs inside the long-lived `omarchy-shell` process and starts no
-daemon of its own. Its timer state survives closing the panel, but resets when
-the shell itself restarts.
+Clockwork runs inside `omarchy-shell`. It saves timer state to
+`${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/clockwork/timer.json`
+so an active or paused timer can be restored after a shell restart. Running
+timers account for the time elapsed while the shell was offline.

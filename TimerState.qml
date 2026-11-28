@@ -2,6 +2,7 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
+import Quickshell.Io
 
 Item {
   id: root
@@ -47,6 +48,109 @@ Item {
   property int pomodoroCurrentCycle: 1
   property int pomodoroCompletedCycles: 0
   property bool pomodoroSessionStarted: false
+
+  readonly property string stateDirectory: (Quickshell.env("XDG_STATE_HOME")
+    || Quickshell.env("HOME") + "/.local/state") + "/omarchy/clockwork"
+  property bool stateRestored: false
+  property bool stateDirectoryReady: false
+  property string savedState: ""
+  property var barSettings: null
+  readonly property string stateSnapshot: JSON.stringify({
+    version: 1,
+    barSettings: barSettings,
+    timer: {
+      mode: mode,
+      running: running,
+      completed: completed,
+      startedAt: startedAt,
+      storedElapsedMs: storedElapsedMs,
+      notifiedIntervals: notifiedIntervals,
+      alarmRingEndsAt: alarmRingEndsAt,
+      countdownMinutes: countdownMinutes,
+      countdownSeconds: countdownSeconds,
+      countdownFullscreenEnabled: countdownFullscreenEnabled,
+      countdownMessage: countdownMessage,
+      intervalRounds: intervalRounds,
+      intervalMinutes: intervalMinutes,
+      intervalSeconds: intervalSeconds,
+      alarmHour: alarmHour,
+      alarmMinute: alarmMinute,
+      alarmUses12Hour: alarmUses12Hour,
+      alarmSound: alarmSound,
+      alarmMessage: alarmMessage,
+      alarmTargetAt: alarmTargetAt,
+      alarmTargetDurationMs: alarmTargetDurationMs,
+      pomodoroWorkMinutes: pomodoroWorkMinutes,
+      pomodoroShortBreakMinutes: pomodoroShortBreakMinutes,
+      pomodoroCycles: pomodoroCycles,
+      pomodoroLongBreakMinutes: pomodoroLongBreakMinutes,
+      pomodoroSoundEnabled: pomodoroSoundEnabled,
+      pomodoroBreakColor: String(pomodoroBreakColor),
+      pomodoroPhaseKind: pomodoroPhaseKind,
+      pomodoroCurrentCycle: pomodoroCurrentCycle,
+      pomodoroCompletedCycles: pomodoroCompletedCycles,
+      pomodoroSessionStarted: pomodoroSessionStarted
+    }
+  })
+
+  // Save once per transition, after all the related properties have changed.
+  onStateSnapshotChanged: if (stateRestored) Qt.callLater(saveState)
+
+  Component.onCompleted: restoreState()
+
+  function restoreState() {
+    var text = stateFile.text()
+    if (text) {
+      try {
+        var saved = JSON.parse(text)
+        if (saved.version === 1 && saved.timer) {
+          var defaults = JSON.parse(stateSnapshot).timer
+          for (var key in defaults) {
+            var value = saved.timer[key]
+            if (typeof value !== typeof defaults[key]) continue
+            if (typeof value === "number" && !isFinite(value)) continue
+            if (key === "alarmSound") setAlarmSound(value)
+            else root[key] = value
+          }
+          if (saved.barSettings && typeof saved.barSettings === "object")
+            barSettings = saved.barSettings
+          savedState = text
+        }
+      } catch (error) {
+        console.warn("Clockwork could not restore timer state:", error)
+      }
+    }
+    stateRestored = true
+    Qt.callLater(resumeTimer)
+  }
+
+  function saveState() {
+    if (!stateDirectoryReady || savedState === stateSnapshot) return
+    stateFile.setText(stateSnapshot)
+  }
+
+  function resumeTimer() {
+    nowMs = Date.now()
+    if (running) {
+      // An overdue focus phase starts its break at the original deadline.
+      // The next tick can then also settle a break that already elapsed.
+      if (mode === pomodoroMode && elapsedMs >= targetMs)
+        completePomodoroPhase(startedAt + targetMs - storedElapsedMs)
+      tick()
+    } else if (mode === alarmMode && completed && alarmRingEndsAt > nowMs) {
+      playSound(alarmSound)
+      alarmRingTimer.start()
+    }
+  }
+
+  function applyBarSettings(values) {
+    if (JSON.stringify(barSettings) === JSON.stringify(values)) return
+    barSettings = values
+    configurePomodoro(values.workMinutes, values.shortBreakMinutes, values.cycles,
+      values.longBreakMinutes, values.soundEnabled, values.breakColor)
+    setAlarmUses12Hour(values.alarmUses12Hour)
+    setAlarmSound(values.alarmSound)
+  }
 
   readonly property int intervalDurationMs: Math.max(1000, intervalMinutes * 60000 + intervalSeconds * 1000)
   readonly property string intervalDurationText: pad2(intervalMinutes) + ":" + pad2(intervalSeconds)
@@ -348,12 +452,12 @@ Item {
     if (changed && mode === pomodoroMode) reset()
   }
 
-  function beginPomodoroPhase(kind, cycle, autoRun) {
+  function beginPomodoroPhase(kind, cycle, autoRun, phaseStartedAt) {
     pomodoroPhaseKind = kind
     pomodoroCurrentCycle = Math.max(1, Math.min(pomodoroCycles, Number(cycle)))
     storedElapsedMs = 0
     nowMs = Date.now()
-    startedAt = nowMs
+    startedAt = phaseStartedAt === undefined ? nowMs : phaseStartedAt
     running = Boolean(autoRun)
     completed = false
     pomodoroSessionStarted = true
@@ -374,11 +478,11 @@ Item {
     finishPomodoroCycle(false)
   }
 
-  function completePomodoroPhase() {
+  function completePomodoroPhase(nextPhaseStartedAt) {
     if (pomodoroPhaseKind === "focus") {
       pomodoroCompletedCycles = Math.min(pomodoroCycles, pomodoroCompletedCycles + 1)
       var longBreak = pomodoroCompletedCycles >= pomodoroCycles
-      beginPomodoroPhase(longBreak ? "long-break" : "short-break", pomodoroCompletedCycles, true)
+      beginPomodoroPhase(longBreak ? "long-break" : "short-break", pomodoroCompletedCycles, true, nextPhaseStartedAt)
       playPomodoroSound()
       notify(longBreak
         ? "Focus " + pomodoroCompletedCycles + " complete · Long break starts now"
@@ -503,6 +607,30 @@ Item {
       "Clockwork",
       message
     ])
+  }
+
+  FileView {
+    id: stateFile
+    path: root.stateDirectory + "/timer.json"
+    blockLoading: true
+    blockWrites: true
+    atomicWrites: true
+    printErrors: false
+    onSaved: root.savedState = root.stateSnapshot
+    onSaveFailed: error => console.warn("Clockwork could not save timer state:", error)
+  }
+
+  Process {
+    running: root.stateRestored
+    command: ["mkdir", "-p", "-m", "700", "--", root.stateDirectory]
+    onExited: exitCode => {
+      if (exitCode === 0) {
+        root.stateDirectoryReady = true
+        root.saveState()
+      } else {
+        console.warn("Clockwork could not create its state directory:", root.stateDirectory)
+      }
+    }
   }
 
   Timer {

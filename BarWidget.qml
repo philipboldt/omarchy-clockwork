@@ -30,20 +30,18 @@ BarWidget {
     return Math.max(minimum, Math.min(maximum, Math.round(parsed)))
   }
 
-  function applyPomodoroSettings() {
-    TimerCore.TimerState.configurePomodoro(
-      root.configuredInt("pomodoroWorkMinutes", "workMinutes", 25, 1, 999),
-      root.configuredInt("pomodoroShortBreakMinutes", "shortBreakMinutes", 5, 1, 999),
-      root.configuredInt("pomodoroCycles", "pomodorosPerCycle", 4, 1, 99),
-      root.configuredInt("pomodoroLongBreakMinutes", "longBreakMinutes", 15, 1, 999),
-      root.setting("pomodoroSound", root.setting("sound", true)) !== false,
-      root.setting("pomodoroBreakColor", root.setting("breakColor", "#a6e3a1"))
-    )
-  }
-
-  function applyAlarmSettings() {
-    TimerCore.TimerState.setAlarmUses12Hour(root.setting("alarmUses12Hour", false) === true)
-    TimerCore.TimerState.setAlarmSound(root.setting("alarmSound", "alarm-clock-elapsed.oga"))
+  function applyTimerSettings() {
+    if (!root.bar) return
+    TimerCore.TimerState.applyBarSettings({
+      workMinutes: root.configuredInt("pomodoroWorkMinutes", "workMinutes", 25, 1, 999),
+      shortBreakMinutes: root.configuredInt("pomodoroShortBreakMinutes", "shortBreakMinutes", 5, 1, 999),
+      cycles: root.configuredInt("pomodoroCycles", "pomodorosPerCycle", 4, 1, 99),
+      longBreakMinutes: root.configuredInt("pomodoroLongBreakMinutes", "longBreakMinutes", 15, 1, 999),
+      soundEnabled: root.setting("pomodoroSound", root.setting("sound", true)) !== false,
+      breakColor: root.setting("pomodoroBreakColor", root.setting("breakColor", "#a6e3a1")),
+      alarmUses12Hour: root.setting("alarmUses12Hour", false) === true,
+      alarmSound: root.setting("alarmSound", "alarm-clock-elapsed.oga")
+    })
   }
 
   function injectPanel() {
@@ -73,16 +71,15 @@ BarWidget {
 
   implicitWidth: button.implicitWidth
   implicitHeight: button.implicitHeight
+  readonly property real openPanelIndicatorWidth: timerRow.implicitWidth
 
-  onBarChanged: injectPanel()
-  onSettingsChanged: {
-    root.applyPomodoroSettings()
-    root.applyAlarmSettings()
+  onBarChanged: {
+    Qt.callLater(root.applyTimerSettings)
     root.injectPanel()
   }
-  Component.onCompleted: {
-    root.applyPomodoroSettings()
-    root.applyAlarmSettings()
+  onSettingsChanged: {
+    Qt.callLater(root.applyTimerSettings)
+    root.injectPanel()
   }
 
   Loader {
