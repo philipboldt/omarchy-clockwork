@@ -19,9 +19,6 @@ BarWidget {
     && TimerCore.TimerState.pomodoroPhase.kind !== "focus"
   readonly property bool alarmRinging: TimerCore.TimerState.mode === TimerCore.TimerState.alarmMode
     && TimerCore.TimerState.completed
-  readonly property color pomodoroPhaseColor: root.pomodoroBreak
-    ? TimerCore.TimerState.pomodoroBreakColor
-    : Color.accent
   readonly property color alarmCueColor: root.bar ? root.bar.urgent : Color.urgent
 
   function configuredInt(primary, alias, fallback, minimum, maximum) {
@@ -236,10 +233,7 @@ BarWidget {
         visible: !root.vertical && TimerCore.TimerState.barTimeText !== ""
         text: TimerCore.TimerState.barTimeText
         textFormat: Text.PlainText
-        color: root.alarmRinging
-          ? root.alarmCueColor
-          : !button.active ? button.foreground
-          : root.pomodoroSessionVisible ? root.pomodoroPhaseColor : button.activeColor
+        color: button.foreground
         font.family: button.fontFamily
         font.pixelSize: Style.bar.iconFont
         renderType: Text.NativeRendering
@@ -251,10 +245,7 @@ BarWidget {
         height: Style.bar.iconSize
         paintedSize: Style.bar.iconSize
         text: root.pomodoroBreak ? "󰅶" : "󰂚"
-        color: root.alarmRinging
-          ? root.alarmCueColor
-          : !button.active ? button.foreground
-          : root.pomodoroSessionVisible ? root.pomodoroPhaseColor : button.activeColor
+        color: button.foreground
         fontFamily: button.fontFamily
         fontSize: Style.bar.iconFont
         anchors.verticalCenter: parent.verticalCenter
